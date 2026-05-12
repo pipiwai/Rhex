@@ -6,6 +6,7 @@ import {
   type IndexedAddonSurfaceCandidate,
 } from "@/addons-host/runtime/loader"
 import { runWithAddonExecutionScope } from "@/addons-host/runtime/execution-scope"
+import { executeAddonActionHook } from "@/addons-host/runtime/hooks"
 import { findAddonApiRoute, findAddonPageRoute } from "@/addons-host/runtime/routes"
 import {
   logRenderFailure,
@@ -272,6 +273,22 @@ export async function executeAddonApi(
 
   const routePath = routeSegments?.filter(Boolean).join("/") ?? ""
   const requestUrl = new URL(request.url)
+  const apiHookPayload = {
+    scope,
+    addonId,
+    routePath,
+    routeSegments: matched.normalizedSegments,
+    method,
+    pathname: requestUrl.pathname,
+  }
+
+  await executeAddonActionHook("addon.api.request.before", apiHookPayload, {
+    request,
+    pathname: requestUrl.pathname,
+    searchParams: requestUrl.searchParams,
+    throwOnError: true,
+  })
+
   // api 路径的 handle 一定返回 AddonApiResult（非 undefined），保留直接 scope 调用，
   // 避免 runAddonRenderCall 的 `TResult | undefined` 返回污染下游 http.ts 类型。
   const result = await runWithAddonExecutionScope(matched.addon, {

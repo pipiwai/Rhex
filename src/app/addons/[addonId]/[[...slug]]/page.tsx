@@ -1,7 +1,7 @@
 import type { Metadata } from "next"
 import { notFound, redirect } from "next/navigation"
 
-import { AddonRenderBlock, executeAddonPage, isAddonRedirectResult } from "@/addons-host"
+import { AddonRenderBlock, AddonSlotRenderer, executeAddonPage, isAddonRedirectResult } from "@/addons-host"
 import { HomeSidebarPanels } from "@/components/home/home-sidebar-panels"
 import { SidebarNavigation } from "@/components/sidebar-navigation"
 import { SiteFooter } from "@/components/site-footer"
@@ -52,6 +52,16 @@ export default async function AddonPublicPage({ params }: AddonPageProps) {
 
   const renderResult = resolved.result
   const renderBlockKey = `${resolved.addon.manifest.id}:${resolved.registration.key}:page`
+  const routeSegments = slug ?? []
+  const routePath = routeSegments.filter(Boolean).join("/")
+  const addonPageSlotProps = {
+    scope: "public",
+    addonId: resolved.addon.manifest.id,
+    addonName: resolved.addon.manifest.name,
+    pageKey: resolved.registration.key,
+    routePath,
+    routeSegments,
+  }
   const chrome = resolved.registration.chrome ?? {}
   const showHeader = chrome.header === true
   const showFooter = chrome.footer === true
@@ -78,8 +88,10 @@ export default async function AddonPublicPage({ params }: AddonPageProps) {
     : null
   const mainContent = (
     <main className={showLeftSidebar || showRightSidebar ? "py-1 pb-12 mt-6 min-w-0" : "mx-auto flex w-full max-w-5xl flex-col gap-6 px-4 py-8 sm:px-6"}>
+      <AddonSlotRenderer slot="addon.page.before" props={addonPageSlotProps} />
       {showPageHeading ? (
         <section className="space-y-2">
+          <AddonSlotRenderer slot="addon.page.header.before" props={addonPageSlotProps} />
           <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">{resolved.addon.manifest.id}</p>
           <h1 className="text-3xl font-semibold tracking-tight">{resolved.registration.title || resolved.addon.manifest.name}</h1>
           {resolved.registration.description || resolved.addon.manifest.description ? (
@@ -87,10 +99,14 @@ export default async function AddonPublicPage({ params }: AddonPageProps) {
               {resolved.registration.description || resolved.addon.manifest.description}
             </p>
           ) : null}
+          <AddonSlotRenderer slot="addon.page.header.after" props={addonPageSlotProps} />
         </section>
       ) : null}
 
+      <AddonSlotRenderer slot="addon.page.content.before" props={addonPageSlotProps} />
       <AddonRenderBlock addonId={resolved.addon.manifest.id} blockKey={renderBlockKey} result={renderResult} />
+      <AddonSlotRenderer slot="addon.page.content.after" props={addonPageSlotProps} />
+      <AddonSlotRenderer slot="addon.page.after" props={addonPageSlotProps} />
     </main>
   )
 

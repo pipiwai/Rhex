@@ -76,6 +76,7 @@ export const POST = createCustomRouteHandler(async ({ request, context: user }) 
 
     return apiSuccess({
       points: result.points,
+      reward: result.reward,
       alreadyCheckedIn: result.alreadyCheckedIn,
       date: result.date,
       currentStreak: result.currentStreak,

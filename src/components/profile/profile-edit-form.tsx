@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useMemo, useRef, useState } from "react"
-import { Camera, LoaderCircle, Mail, PencilLine, UserRound } from "lucide-react"
+import { AlertCircle, Camera, CheckCircle2, LoaderCircle, Mail, PencilLine, UserRound } from "lucide-react"
 
 import { PasswordChangeForm } from "@/components/profile/password-change-form"
 import { Modal } from "@/components/ui/modal"
@@ -171,6 +171,16 @@ export function ProfileEditForm({
   const hasSavedAvatar = normalizedSavedAvatarPath.length > 0
   const avatarChanged = useMemo(() => normalizedPendingAvatarPath !== normalizedSavedAvatarPath, [normalizedPendingAvatarPath, normalizedSavedAvatarPath])
   const avatarRequiresPayment = avatarChanged && hasSavedAvatar
+  const avatarStatusTitle = avatarChanged
+    ? normalizedPendingAvatarPath
+      ? "新头像已上传，尚未保存"
+      : "头像已重置，尚未保存"
+    : "头像设置已保存"
+  const avatarStatusDescription = avatarChanged
+    ? normalizedPendingAvatarPath
+      ? "当前页面预览的是新头像。请点击“确认保存头像”完成最后一步，否则离开页面后不会生效。"
+      : "当前操作会恢复默认头像。请点击右侧“确认保存头像”完成最后一步。"
+    : ""
   const nicknameHint = nicknameChangePointCost > 0
     ? nicknameChanged
       ? `本次修改昵称将扣除 ${nicknameChangePointCost} ${pointName}。${nicknameChangePriceDescription ? `${nicknameChangePriceDescription}。` : ""}昵称全站唯一。`
@@ -271,7 +281,7 @@ export function ProfileEditForm({
       setPendingAvatarPath(uploadedPath)
       updatePreviewUrl(uploadedPath || nextPreviewUrl)
       clearCropSource()
-      toast.success("头像上传成功，请继续保存头像设置", "头像上传成功")
+      toast.success("新头像已进入预览，请点击“确认保存头像”完成最后一步", "头像待保存")
     } catch (error) {
       updatePreviewUrl(fallbackPreviewUrl)
       toast.error(error instanceof Error ? error.message : "头像上传失败", "头像上传失败")
@@ -594,7 +604,7 @@ export function ProfileEditForm({
                 <p className="mt-1 text-xs text-muted-foreground">建议使用清晰正方形头像，大小控制在 {normalizedAvatarMaxFileSizeMb}MB 以内。</p>
               </div>
             </div>
-            <div className="flex flex-wrap gap-3">
+            <div className="flex flex-wrap gap-3 lg:justify-end">
               <input ref={fileInputRef} type="file" accept="image/*" onChange={handleAvatarUpload} className="hidden" disabled={uploading} />
               <Button type="button" variant="outline" onClick={() => fileInputRef.current?.click()} disabled={uploading}>
                 {uploading ? "上传中..." : "选择头像"}
@@ -610,9 +620,16 @@ export function ProfileEditForm({
               >
                 重置头像
               </Button>
-              <Button type="button" onClick={handleAvatarSave} disabled={uploading || avatarSaving || !avatarChanged}>
-                {avatarSaving ? "保存中..." : "保存头像"}
+              <Button type="button" size="lg" onClick={handleAvatarSave} disabled={uploading || avatarSaving || !avatarChanged} className={avatarChanged ? "shadow-sm" : undefined}>
+                {avatarSaving ? "保存中..." : avatarChanged ? "确认保存头像" : "头像已保存"}
               </Button>
+            </div>
+          </div>
+          <div className={avatarChanged ? "flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-amber-900" : "flex items-start gap-3 rounded-xl border border-border bg-secondary/40 px-4 py-3 text-muted-foreground"}>
+            {avatarChanged ? <AlertCircle className="mt-0.5 size-4 shrink-0" /> : <CheckCircle2 className="mt-0.5 size-4 shrink-0" />}
+            <div className="space-y-1">
+              <p className="text-sm font-medium text-foreground">{avatarStatusTitle}</p>
+              <p className="text-xs leading-6">{avatarStatusDescription}</p>
             </div>
           </div>
           <div className="grid gap-3 sm:grid-cols-3">

@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import { useRouter } from "next/navigation"
 
 import { Modal } from "@/components/ui/modal"
 import { Button } from "@/components/ui/rbutton"
@@ -62,7 +63,9 @@ function buildPageTokens(page: number, totalPages: number): PaginationToken[] {
 }
 
 export function InviteCodePurchaseCard({ enabled, price, priceDescription, pointName }: InviteCodePurchaseCardProps) {
+  const router = useRouter()
   const [loading, setLoading] = useState(false)
+  const [latestBalance, setLatestBalance] = useState<number | null>(null)
   const [latestCode, setLatestCode] = useState("")
   const [historyOpen, setHistoryOpen] = useState(false)
   const [historyLoading, setHistoryLoading] = useState(false)
@@ -109,7 +112,9 @@ export function InviteCodePurchaseCard({ enabled, price, priceDescription, point
 
       const code = typeof result?.data?.code === "string" ? result.data.code : ""
       setLatestCode(code)
+      setLatestBalance(typeof result?.data?.balance === "number" ? result.data.balance : null)
       toast.success(typeof result?.message === "string" ? result.message : "邀请码购买成功", "购买成功")
+      router.refresh()
 
       if (historyOpen) {
         void loadPurchasedInviteCodes(1)
@@ -152,6 +157,9 @@ export function InviteCodePurchaseCard({ enabled, price, priceDescription, point
           <p className="text-sm">
             最新邀请码：<span className="font-mono font-semibold">{latestCode}</span>
           </p>
+        ) : null}
+        {latestBalance !== null ? (
+          <p className="text-sm text-muted-foreground">当前余额已更新为 <span className="font-semibold text-foreground">{formatNumber(latestBalance)}</span> {pointName}</p>
         ) : null}
       </div>
 

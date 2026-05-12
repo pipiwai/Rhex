@@ -14,12 +14,10 @@ export function getAvatarFallback(name: string) {
     return "U"
   }
 
-  const segments = trimmed.split(/\s+/).filter(Boolean)
-  if (segments.length >= 2) {
-    return `${segments[0][0] ?? ""}${segments[1][0] ?? ""}`.toUpperCase()
-  }
+  const characters = Array.from(trimmed.replace(/\s+/g, ""))
+  const fallback = characters.length > 2 ? characters[0] : characters.join("")
 
-  return trimmed.slice(0, 2).toUpperCase()
+  return (fallback || "U").toUpperCase()
 }
 
 export function getAvatarColor(name: string) {

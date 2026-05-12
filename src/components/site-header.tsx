@@ -70,7 +70,9 @@ export async function SiteHeader() {
             <AddonSlotRenderer slot="layout.header.left" />
             <Link href="/" className="flex items-center gap-2 text-xl leading-none">
               <SiteLogoMark logoPath={settings.siteLogoPath} iconPath={settings.siteIconPath} />
-              <div className="hidden font-bold tracking-tight sm:inline-block">{settings.siteLogoText}</div>
+              {settings.siteLogoText && settings.siteLogoText.trim() !== "" ? (
+                <div className="hidden font-bold tracking-tight sm:inline-block">{settings.siteLogoText}</div>
+              ) : null}
             </Link>
           </div>
 

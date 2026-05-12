@@ -35,7 +35,7 @@ export async function purchaseInviteCodeTransaction(params: {
       },
     })
 
-    await applyPointDelta({
+    const purchaseResult = await applyPointDelta({
       tx,
       userId: latestUser.id,
       beforeBalance: latestUser.points,
@@ -45,6 +45,9 @@ export async function purchaseInviteCodeTransaction(params: {
       reason: `购买邀请码消耗${params.pointName}`,
     })
 
-    return inviteCode
+    return {
+      ...inviteCode,
+      balance: purchaseResult.afterBalance,
+    }
   })
 }

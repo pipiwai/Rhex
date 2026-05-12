@@ -149,22 +149,25 @@ export function AvatarCropModal({
       onClose={onClose}
       title="裁剪头像"
       hideHeaderCloseButtonOnMobile
-      description="先裁剪成正方形头像，再上传并保存。右侧会实时预览大、中、小三种尺寸。"
+      description="先裁剪成正方形头像，再上传到预览区。上传后还需要在资料页点击“确认保存头像”才会正式生效。"
       size="xl"
       closeDisabled={saving}
       footer={(
-        <div className="flex flex-wrap justify-end gap-3">
+        <div className="flex flex-col gap-3 sm:items-end">
+          <p className="text-xs text-muted-foreground">上传只是生成预览，最后一步请回到资料页确认保存。</p>
+          <div className="flex flex-wrap justify-end gap-3">
           <Button type="button" variant="outline" onClick={onClose} disabled={saving}>
             取消
           </Button>
           {onUploadOriginal ? (
             <Button type="button" variant="outline" onClick={onUploadOriginal} disabled={saving}>
-              {saving ? "上传中..." : "不裁剪上传"}
+              {saving ? "上传中..." : "不裁剪，上传到预览"}
             </Button>
           ) : null}
           <Button type="button" onClick={handleConfirm} disabled={saving || !croppedAreaPixels}>
-            {saving ? "上传中..." : "裁剪并上传"}
+            {saving ? "上传中..." : "裁剪并上传到预览"}
           </Button>
+          </div>
         </div>
       )}
     >
@@ -228,7 +231,7 @@ export function AvatarCropModal({
           <div className="rounded-xl border border-dashed border-border bg-background/70 p-4 text-xs leading-6 text-muted-foreground">
             <p>1. 头像会按你当前裁剪结果导出为正方形图片。</p>
             <p>2. 建议把主体放在圆形框中央，避免小尺寸下边缘被裁掉。</p>
-            <p>3. 点击“裁剪并上传”后，仍需回到资料页点击“保存头像”才会正式写入个人资料。</p>
+            <p>3. 点击“裁剪并上传到预览”后，仍需回到资料页点击“确认保存头像”才会正式写入个人资料。</p>
           </div>
         </div>
       </div>
@@ -261,4 +264,3 @@ function PreviewSize({
     </div>
   )
 }
-

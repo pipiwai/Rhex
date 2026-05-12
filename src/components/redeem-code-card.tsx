@@ -1,6 +1,7 @@
 "use client"
 
 import Link from "next/link"
+import { useRouter } from "next/navigation"
 import { useState, useTransition } from "react"
 
 import { InputGroup, InputGroupInput } from "@/components/ui/input-group"
@@ -20,7 +21,9 @@ interface RedeemCodeCardProps {
 }
 
 export function RedeemCodeCard({ pointName, currentPoints, helpLinkEnabled = false, helpLinkTitle = "", helpLinkUrl = "" }: RedeemCodeCardProps) {
+  const router = useRouter()
   const [code, setCode] = useState("")
+  const [displayPoints, setDisplayPoints] = useState(currentPoints)
   const [isPending, startTransition] = useTransition()
   const normalizedHelpLinkUrl = helpLinkUrl.trim()
   const normalizedHelpLinkTitle = helpLinkTitle.trim() || "查看说明"
@@ -47,7 +50,7 @@ export function RedeemCodeCard({ pointName, currentPoints, helpLinkEnabled = fal
         <p className="text-sm text-muted-foreground">输入兑换码即可领取 {pointName}。兑换成功后请刷新当前页面查看最新余额与明细。</p>
       </div>
       <div className="mt-4 rounded-xl bg-secondary/40 p-4 text-sm text-muted-foreground">
-        当前账户余额：<span className="font-semibold text-foreground">{formatNumber(currentPoints)}</span> {pointName}
+        当前账户余额：<span className="font-semibold text-foreground">{formatNumber(displayPoints)}</span> {pointName}
       </div>
       <form
         className="mt-4 flex flex-col gap-3 sm:flex-row"
@@ -64,8 +67,13 @@ export function RedeemCodeCard({ pointName, currentPoints, helpLinkEnabled = fal
               toast.error(result.message ?? "兑换失败", "兑换失败")
               return
             }
+            const nextBalance = typeof result.data?.balance === "number" ? result.data.balance : null
+            if (nextBalance !== null) {
+              setDisplayPoints(nextBalance)
+            }
             toast.success(result.message ?? "兑换成功", "兑换成功")
             setCode("")
+            router.refresh()
           })
         }}
 

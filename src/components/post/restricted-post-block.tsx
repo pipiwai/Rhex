@@ -1,10 +1,11 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 
 import { MarkdownContent } from "@/components/markdown-content"
 import { PurchaseUnlockButton } from "@/components/post/purchase-unlock-button"
 import type { MarkdownEmojiItem } from "@/lib/markdown-emoji"
+import { addPostReplyCreatedListener } from "@/lib/post-discussion-events"
 
 interface RestrictedPostBlockProps {
 
@@ -40,6 +41,29 @@ function UnlockedContentFrame({ title, content, html, summary, markdownEmojiMap 
 export function RestrictedPostBlock({ type, postId, blockId, text, html, visible, currentUserId, pointName, replyThreshold, price, purchaseCount = 0, userReplyCount = 0, isOwnerOrAdmin = false, markdownEmojiMap }: RestrictedPostBlockProps) {
 
   const [scrolling, setScrolling] = useState(false)
+  const [localUserReplyCount, setLocalUserReplyCount] = useState(userReplyCount)
+
+  useEffect(() => {
+    setLocalUserReplyCount(userReplyCount)
+  }, [userReplyCount])
+
+  useEffect(() => {
+    if (type !== "REPLY_UNLOCK" || !currentUserId) {
+      return
+    }
+
+    return addPostReplyCreatedListener((detail) => {
+      if (detail.postId !== postId || detail.reviewRequired) {
+        return
+      }
+
+      setLocalUserReplyCount((current) => current + 1)
+    })
+  }, [currentUserId, postId, type])
+
+  const replyUnlocked = useMemo(() => (
+    isOwnerOrAdmin || localUserReplyCount >= (replyThreshold ?? 1)
+  ), [isOwnerOrAdmin, localUserReplyCount, replyThreshold])
 
   function scrollToReplyBox() {
     setScrolling(true)
@@ -49,7 +73,7 @@ export function RestrictedPostBlock({ type, postId, blockId, text, html, visible
   }
 
 
-  if (visible && text) {
+  if ((visible || (type === "REPLY_UNLOCK" && replyUnlocked)) && text) {
     return (
         <UnlockedContentFrame
           title={type === "LOGIN_UNLOCK" ? "登录后可见内容" : type === "REPLY_UNLOCK" ? "回复后已解锁内容" : "购买后已解锁内容"}
@@ -75,7 +99,7 @@ export function RestrictedPostBlock({ type, postId, blockId, text, html, visible
       <div className="space-y-4 rounded-xl border border-dashed border-sky-300 bg-sky-50 px-5 py-4 text-sm text-sky-900">
         <div className="space-y-1">
           <p className="font-medium">回复后可见内容</p>
-          <p>{isOwnerOrAdmin ? "你是楼主或管理员，可直接查看该内容。" : `当前需要在本帖回复满 ${replyThreshold ?? 1} 次后解锁，你已回复 ${userReplyCount} 次。`}</p>
+          <p>{isOwnerOrAdmin ? "你是楼主或管理员，可直接查看该内容。" : `当前需要在本帖回复满 ${replyThreshold ?? 1} 次后解锁，你已回复 ${localUserReplyCount} 次。`}</p>
         </div>
         {!currentUserId ? <p>登录后即可参与回复解锁。</p> : null}
         {currentUserId && !isOwnerOrAdmin ? (

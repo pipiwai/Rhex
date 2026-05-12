@@ -1,5 +1,6 @@
 "use client"
 
+import type { ReactNode } from "react"
 import { ArrowRight, Flame, Sparkles, Trophy, Zap } from "lucide-react"
 import Link from "next/link"
 
@@ -31,10 +32,19 @@ function renderTaskList(items: TaskCenterPageData["tasksByCategory"][TaskCategor
   )
 }
 
-export function TaskCenterPage({ data }: { data: TaskCenterPageData }) {
+interface TaskCenterPageProps {
+  data: TaskCenterPageData
+  headerBefore?: ReactNode
+  headerAfter?: ReactNode
+  contentBefore?: ReactNode
+  contentAfter?: ReactNode
+}
+
+export function TaskCenterPage({ data, headerBefore, headerAfter, contentBefore, contentAfter }: TaskCenterPageProps) {
   return (
     <Tabs defaultValue={TaskCategory.NEWBIE} className="flex flex-col gap-3">
       <div className="rounded-xl border border-border/70 bg-card/95 p-2.5 shadow-sm">
+        {headerBefore}
         <div className="flex flex-col gap-2.5 lg:flex-row lg:items-center lg:justify-between">
           <div className="flex min-w-0 flex-col gap-1.5">
             <div className="flex flex-wrap items-center gap-2">
@@ -84,8 +94,10 @@ export function TaskCenterPage({ data }: { data: TaskCenterPageData }) {
             <TabsTrigger value={TaskCategory.CHALLENGE} className={cn("rounded-full border border-border bg-background px-3 py-1.5 text-sm", "data-[selected]:bg-foreground data-[selected]:text-background")}>挑战任务</TabsTrigger>
           </TabsList>
         </div>
+        {headerAfter}
       </div>
 
+      {contentBefore}
       <TabsContent value={TaskCategory.NEWBIE}>
         {renderTaskList(data.tasksByCategory[TaskCategory.NEWBIE], data.pointName)}
       </TabsContent>
@@ -95,6 +107,7 @@ export function TaskCenterPage({ data }: { data: TaskCenterPageData }) {
       <TabsContent value={TaskCategory.CHALLENGE}>
         {renderTaskList(data.tasksByCategory[TaskCategory.CHALLENGE], data.pointName)}
       </TabsContent>
+      {contentAfter}
     </Tabs>
   )
 }

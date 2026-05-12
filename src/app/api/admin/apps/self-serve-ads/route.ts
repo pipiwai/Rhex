@@ -8,6 +8,12 @@ export const dynamic = "force-dynamic"
 import { updateSelfServeAdsAppConfig } from "@/lib/app-config"
 import { getSelfServeAdsAdminData, reviewSelfServeAdOrder } from "@/lib/self-serve-ads"
 
+function revalidateSelfServeAdsDisplayPaths() {
+  revalidatePath("/", "layout")
+  revalidatePath("/posts/[slug]", "page")
+  revalidatePath("/admin/apps/self-serve-ads")
+}
+
 export const GET = createAdminRouteHandler(async () => {
   const data = await getSelfServeAdsAdminData()
   return apiSuccess(data)
@@ -24,8 +30,7 @@ export const POST = createAdminRouteHandler(async ({ request }) => {
     const config = body.config && typeof body.config === "object" ? body.config as Record<string, unknown> : {}
     const data = await updateSelfServeAdsAppConfig(config)
     revalidateSiteSettingsCache()
-    revalidatePath("/")
-    revalidatePath("/admin/apps/self-serve-ads")
+    revalidateSelfServeAdsDisplayPaths()
     return apiSuccess(data, "应用配置已保存")
   }
 
@@ -44,13 +49,11 @@ export const POST = createAdminRouteHandler(async ({ request }) => {
   })
 
 
-  revalidatePath("/")
+  revalidateSelfServeAdsDisplayPaths()
   revalidatePath("/admin")
-  revalidatePath("/admin/apps/self-serve-ads")
   return apiSuccess(undefined, "广告订单已更新")
 }, {
   errorMessage: "广告订单更新失败",
   logPrefix: "[api/admin/apps/self-serve-ads:POST] unexpected error",
   unauthorizedMessage: "无权操作",
 })
-

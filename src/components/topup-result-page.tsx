@@ -1,6 +1,7 @@
 "use client"
 
 import Link from "next/link"
+import { useRouter } from "next/navigation"
 import { useEffect, useState } from "react"
 
 import { Button } from "@/components/ui/rbutton"
@@ -19,6 +20,7 @@ interface TopupResultPageProps {
     currency: string
     lastErrorCode: string | null
     lastErrorMessage: string | null
+    userBalance?: number | null
     topup: {
       title: string
       points: number
@@ -33,6 +35,7 @@ function formatAmountFen(amountFen: number, currency: string) {
 }
 
 export function TopupResultPage({ merchantOrderNo, pointName, initialStatus }: TopupResultPageProps) {
+  const router = useRouter()
   const [status, setStatus] = useState(initialStatus)
 
   useEffect(() => {
@@ -112,6 +115,14 @@ export function TopupResultPage({ merchantOrderNo, pointName, initialStatus }: T
         ? "如果你刚刚完成支付，请稍等几秒，系统会自动刷新订单状态。"
         : "支付已经确认，系统正在处理积分到账，请不要重复付款。"
 
+  useEffect(() => {
+    if (!succeeded) {
+      return
+    }
+
+    router.refresh()
+  }, [router, status.fulfilledAt, succeeded])
+
   return (
     <div className="space-y-6">
       <section className={`rounded-xl border p-6 ${succeeded ? "border-emerald-200 bg-emerald-50/70" : failed ? "border-rose-200 bg-rose-50/70" : "border-border bg-card"}`}>
@@ -147,6 +158,9 @@ export function TopupResultPage({ merchantOrderNo, pointName, initialStatus }: T
               {status.topup.bonusPoints > 0 ? ` + 赠送 ${formatNumber(status.topup.bonusPoints)} ${pointName}` : ""}
             </p>
             <p className="mt-1 text-lg font-semibold">共到账 {formatNumber(status.topup.totalPoints)} {pointName}</p>
+            {typeof status.userBalance === "number" ? (
+              <p className="mt-1 text-sm text-muted-foreground">当前余额 {formatNumber(status.userBalance)} {pointName}</p>
+            ) : null}
           </div>
         ) : null}
 

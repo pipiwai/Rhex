@@ -1,6 +1,7 @@
 import type { Metadata } from "next"
 import { redirect } from "next/navigation"
 
+import { AddonSlotRenderer } from "@/addons-host"
 import { getHomeAnnouncements } from "@/lib/announcements"
 import { getBoards } from "@/lib/boards"
 import { ForumPageShell } from "@/components/forum/forum-page-shell"
@@ -48,17 +49,32 @@ export default async function TasksPage() {
   }
 
   const sidebarUser = await resolveSidebarUser(currentUser, settings)
+  const taskSlotProps = {
+    userId: currentUser.id,
+    pointName: settings.pointName,
+    todayCompleted: data.todayCompleted,
+    challengeCompleted: data.challengeCompleted,
+    totalCompleted: data.totalCompleted,
+    totalTasks: data.totalTasks,
+  }
 
   return (
     <div className="min-h-screen bg-background text-foreground">
       <SiteHeader />
       <div className="mx-auto max-w-[1200px] px-1">
+        <AddonSlotRenderer slot="tasks.page.before" props={taskSlotProps} />
         <ForumPageShell
           zones={zones}
           boards={boards}
           main={(
             <main className="py-1 pb-12 mt-6">
-              <TaskCenterPage data={data} />
+              <TaskCenterPage
+                data={data}
+                headerBefore={<AddonSlotRenderer slot="tasks.header.before" props={taskSlotProps} />}
+                headerAfter={<AddonSlotRenderer slot="tasks.header.after" props={taskSlotProps} />}
+                contentBefore={<AddonSlotRenderer slot="tasks.content.before" props={taskSlotProps} />}
+                contentAfter={<AddonSlotRenderer slot="tasks.content.after" props={taskSlotProps} />}
+              />
             </main>
           )}
           rightSidebar={(
@@ -77,6 +93,7 @@ export default async function TasksPage() {
             </aside>
           )}
         />
+        <AddonSlotRenderer slot="tasks.page.after" props={taskSlotProps} />
       </div>
     </div>
   )

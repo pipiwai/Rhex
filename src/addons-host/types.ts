@@ -8,6 +8,12 @@ export const ADDON_SLOT_KEYS = [
   "auth.register.captcha",
   "auth.register.form.after",
   "post.create.captcha",
+  "addon.page.before",
+  "addon.page.after",
+  "addon.page.header.before",
+  "addon.page.header.after",
+  "addon.page.content.before",
+  "addon.page.content.after",
   "layout.head.before",
   "layout.head.after",
   "layout.header.left",
@@ -233,6 +239,10 @@ export const ADDON_SLOT_KEYS = [
   "funs.content.after",
   "funs.sidebar.before",
   "funs.sidebar.after",
+  "funs.app.page.before",
+  "funs.app.page.after",
+  "funs.app.content.before",
+  "funs.app.content.after",
   "badge.page.before",
   "badge.page.after",
   "badge.hero.before",
@@ -271,6 +281,34 @@ export const ADDON_SLOT_KEYS = [
   "topup.result.page.after",
   "topup.result.panel.before",
   "topup.result.panel.after",
+  "tasks.page.before",
+  "tasks.page.after",
+  "tasks.header.before",
+  "tasks.header.after",
+  "tasks.content.before",
+  "tasks.content.after",
+  "leaderboard.page.before",
+  "leaderboard.page.after",
+  "leaderboard.hero.before",
+  "leaderboard.hero.after",
+  "leaderboard.content.before",
+  "leaderboard.content.after",
+  "leaderboard.sidebar.before",
+  "leaderboard.sidebar.after",
+  "custom-page.page.before",
+  "custom-page.page.after",
+  "custom-page.content.before",
+  "custom-page.content.after",
+  "custom-page.sidebar.before",
+  "custom-page.sidebar.after",
+  "zone.page.before",
+  "zone.page.after",
+  "zone.hero.before",
+  "zone.hero.after",
+  "zone.content.before",
+  "zone.content.after",
+  "zone.sidebar.before",
+  "zone.sidebar.after",
 ] as const
 
 export type AddonSlotKey = (typeof ADDON_SLOT_KEYS)[number]
@@ -348,6 +386,8 @@ export const ADDON_ACTION_HOOK_NAMES = [
   "addon.uninstalled.after",
   "addon.enabled.after",
   "addon.disabled.after",
+  "addon.api.request.before",
+  "addon.api.request.after",
   // 搜索
   "search.query.after",
 ] as const
@@ -1548,6 +1588,25 @@ export interface AddonActionHookPayloadMap {
   "addon.disabled.after": {
     addonId: string
     version: string
+  }
+  "addon.api.request.before": {
+    scope: AddonApiScope
+    addonId: string
+    routePath: string
+    routeSegments: string[]
+    method: AddonHttpMethod
+    pathname: string
+  }
+  "addon.api.request.after": {
+    scope: AddonApiScope
+    addonId: string
+    routePath: string
+    routeSegments: string[]
+    method: AddonHttpMethod
+    pathname: string
+    status: number
+    matched: boolean
+    errorMessage?: string
   }
   // ─── 搜索 ───
   "search.query.after": {

@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import { useRouter } from "next/navigation"
 
 import { Button } from "@/components/ui/rbutton"
 import { toast } from "@/components/ui/toast"
@@ -15,6 +16,7 @@ interface PurchaseUnlockButtonProps {
 }
 
 export function PurchaseUnlockButton({ postId, blockId, price, pointName }: PurchaseUnlockButtonProps) {
+  const router = useRouter()
   const [loading, setLoading] = useState(false)
 
 
@@ -37,7 +39,7 @@ export function PurchaseUnlockButton({ postId, blockId, price, pointName }: Purc
     }
 
     toast.success(result.message ?? "购买成功", "购买成功")
-    window.location.reload()
+    router.refresh()
   }
 
 

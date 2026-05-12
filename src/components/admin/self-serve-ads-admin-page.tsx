@@ -35,6 +35,8 @@ type AdminAdOrderItem = {
 
 function useConfigState(config: ReturnType<typeof toSelfServeAdConfig>) {
   const [visibleOnHome, setVisibleOnHome] = useState(config.visibleOnHome)
+  const [visibleOnPostDetail, setVisibleOnPostDetail] = useState(config.visibleOnPostDetail)
+  const [visibleOnGlobalSidebar, setVisibleOnGlobalSidebar] = useState(config.visibleOnGlobalSidebar)
   const [cardTitle, setCardTitle] = useState(config.cardTitle)
   const [sidebarSlot, setSidebarSlot] = useState(config.sidebarSlot)
 
@@ -54,6 +56,10 @@ function useConfigState(config: ReturnType<typeof toSelfServeAdConfig>) {
   return {
     visibleOnHome,
     setVisibleOnHome,
+    visibleOnPostDetail,
+    setVisibleOnPostDetail,
+    visibleOnGlobalSidebar,
+    setVisibleOnGlobalSidebar,
     cardTitle,
     setCardTitle,
     sidebarSlot,
@@ -131,6 +137,8 @@ export function SelfServeAdsAdminPage({ AppId, config }: SelfServeAdsAdminPagePr
           config: {
             enabled: true,
             visibleOnHome: state.visibleOnHome,
+            visibleOnPostDetail: state.visibleOnPostDetail,
+            visibleOnGlobalSidebar: state.visibleOnGlobalSidebar,
             cardTitle: state.cardTitle,
             sidebarSlot: state.sidebarSlot,
 
@@ -228,6 +236,14 @@ export function SelfServeAdsAdminPage({ AppId, config }: SelfServeAdsAdminPagePr
           <label className="flex min-h-[44px] items-center justify-between gap-3 rounded-[16px] border border-border bg-background px-4 py-3 text-sm">
             <span className="font-medium">首页显示广告卡片</span>
             <input type="checkbox" checked={state.visibleOnHome} onChange={(event) => state.setVisibleOnHome(event.target.checked)} className="h-4 w-4 rounded border-border" />
+          </label>
+          <label className="flex min-h-[44px] items-center justify-between gap-3 rounded-[16px] border border-border bg-background px-4 py-3 text-sm">
+            <span className="font-medium">帖子详情页显示</span>
+            <input type="checkbox" checked={state.visibleOnPostDetail} onChange={(event) => state.setVisibleOnPostDetail(event.target.checked)} className="h-4 w-4 rounded border-border" />
+          </label>
+          <label className="flex min-h-[44px] items-center justify-between gap-3 rounded-[16px] border border-border bg-background px-4 py-3 text-sm">
+            <span className="font-medium">其它页面全局右侧显示</span>
+            <input type="checkbox" checked={state.visibleOnGlobalSidebar} onChange={(event) => state.setVisibleOnGlobalSidebar(event.target.checked)} className="h-4 w-4 rounded border-border" />
           </label>
           <Field label="卡片标题" value={state.cardTitle} onChange={state.setCardTitle} />
 

@@ -493,6 +493,7 @@ export async function HomeFeedPage({
                   siteDescription={settings.siteDescription}
                   siteLogoPath={settings.siteLogoPath}
                   siteIconPath={settings.siteIconPath}
+                  selfServeAdsSurface={false}
                 />
               </AddonSurfaceRenderer>
               <AddonSlotRenderer slot="feed.sidebar.after" />

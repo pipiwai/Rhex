@@ -149,6 +149,8 @@ export const GOBANG_DEFAULT_CONFIG = {
 export const SELF_SERVE_ADS_DEFAULT_CONFIG = {
   enabled: true,
   visibleOnHome: true,
+  visibleOnPostDetail: false,
+  visibleOnGlobalSidebar: false,
   cardTitle: "推广广告位",
 
   sidebarSlot: "home-right-middle",

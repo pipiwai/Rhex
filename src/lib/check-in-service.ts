@@ -263,6 +263,46 @@ function parseCheckInActionPayload(body: unknown): CheckInActionPayload {
     : { action }
 }
 
+async function settleTaskDrivenCheckInReward(params: {
+  userId: number
+  dateKey: string
+  currentPoints: number
+  warningContext: string
+}) {
+  let finalReward = 0
+  let finalPoints = params.currentPoints
+
+  try {
+    const taskReward = await recordCheckInTaskEvent({
+      type: "CHECK_IN",
+      userId: params.userId,
+      dateKey: params.dateKey,
+    })
+    finalReward = taskReward.awardedPoints
+    await updateUserCheckInReward({
+      userId: params.userId,
+      dateKey: params.dateKey,
+      reward: finalReward,
+    })
+    const latestUser = await prisma.user.findUnique({
+      where: { id: params.userId },
+      select: {
+        points: true,
+      },
+    })
+    if (latestUser) {
+      finalPoints = latestUser.points
+    }
+  } catch (error) {
+    console.warn(`[check-in-service] failed to settle task rewards for ${params.warningContext}`, error)
+  }
+
+  return {
+    reward: finalReward,
+    points: finalPoints,
+  }
+}
+
 export async function getCheckInOverview(user: CurrentUserRecord, month = getMonthKey()): Promise<CheckInOverview> {
   const settings = await getSiteSettings()
   assertCheckInEnabled(settings)
@@ -341,30 +381,14 @@ export async function submitCheckInAction(user: CurrentUserRecord, body: unknown
     let finalPoints = result.points
 
     if (!result.alreadyCheckedIn && !usesLegacyReward) {
-      try {
-        const taskReward = await recordCheckInTaskEvent({
-          type: "CHECK_IN",
-          userId: user.id,
-          dateKey: todayKey,
-        })
-        finalReward = taskReward.awardedPoints
-        await updateUserCheckInReward({
-          userId: user.id,
-          dateKey: todayKey,
-          reward: finalReward,
-        })
-        const latestUser = await prisma.user.findUnique({
-          where: { id: user.id },
-          select: {
-            points: true,
-          },
-        })
-        if (latestUser) {
-          finalPoints = latestUser.points
-        }
-      } catch (error) {
-        console.warn("[check-in-service] failed to settle task rewards for check-in", error)
-      }
+      const settledReward = await settleTaskDrivenCheckInReward({
+        userId: user.id,
+        dateKey: todayKey,
+        currentPoints: result.points,
+        warningContext: "check-in",
+      })
+      finalReward = settledReward.reward
+      finalPoints = settledReward.points
     }
 
     const streakSummary = await getUserCheckInStreakSummary(user.id)
@@ -428,16 +452,30 @@ export async function submitCheckInAction(user: CurrentUserRecord, body: unknown
   if (result.alreadyCheckedIn) {
     apiError(409, "该日期已经签到过了")
   }
+  let finalReward = reward
+  let finalPoints = result.points
+
+  if (!usesLegacyReward) {
+    const settledReward = await settleTaskDrivenCheckInReward({
+      userId: user.id,
+      dateKey: targetDateKey,
+      currentPoints: result.points,
+      warningContext: "make-up check-in",
+    })
+    finalReward = settledReward.reward
+    finalPoints = settledReward.points
+  }
+
   const streakSummary = await getUserCheckInStreakSummary(user.id)
 
   return {
-    points: result.points,
-    reward,
+    points: finalPoints,
+    reward: finalReward,
     alreadyCheckedIn: false,
     date: targetDateKey,
     currentStreak: streakSummary.currentStreak,
     maxStreak: streakSummary.maxStreak,
     makeUpCost,
-    message: `补签成功，获得 ${formatNumber(reward)} ${snapshot.pointName}${makeUpCost > 0 ? `，消耗 ${formatNumber(makeUpCost)} ${snapshot.pointName}` : ""}`,
+    message: `补签成功，获得 ${formatNumber(finalReward)} ${snapshot.pointName}${makeUpCost > 0 ? `，消耗 ${formatNumber(makeUpCost)} ${snapshot.pointName}` : ""}`,
   }
 }

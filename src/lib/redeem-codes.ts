@@ -259,7 +259,7 @@ export async function redeemPointsCode(input: { userId: number; code: string }) 
       userId: input.userId,
     })
 
-    await applyPointDelta({
+    const rewardResult = await applyPointDelta({
       tx,
       userId: input.userId,
       beforeBalance: latestUser.points,
@@ -273,6 +273,7 @@ export async function redeemPointsCode(input: { userId: number; code: string }) 
       ...activeRedeemCode,
       codeCategory: latestCodeCategory,
       categoryUserLimit: latestCategoryUserLimit,
+      balance: rewardResult.afterBalance,
     }
   })
 }

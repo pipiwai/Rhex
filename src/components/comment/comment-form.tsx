@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/rbutton"
 import { toast } from "@/components/ui/toast"
 import { getClientPlatform, type ClientPlatform } from "@/lib/client-platform"
 import type { MarkdownEmojiItem } from "@/lib/markdown-emoji"
+import { dispatchPostReplyCreated } from "@/lib/post-discussion-events"
 import { cn } from "@/lib/utils"
 
 interface CommentFormProps {
@@ -168,6 +169,14 @@ export function CommentForm({ postId, commentId, initialContent = "", mode = "cr
     }
 
     onCancel?.()
+
+    if (typeof result.data?.id === "string") {
+      dispatchPostReplyCreated({
+        postId,
+        commentId: result.data.id,
+        reviewRequired: Boolean(result.data?.reviewRequired),
+      })
+    }
 
     if (nextUrl) {
       router.replace(nextUrl)

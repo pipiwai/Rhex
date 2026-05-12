@@ -6,10 +6,11 @@ import { PostListLink } from "@/components/post/post-list-link"
 import { ReadingHistoryPanel } from "@/components/post/reading-history-panel"
 import { HomeSiteStatsCard } from "@/components/home/home-site-stats-card"
 import { SidebarUserCard, type SidebarUserCardData } from "@/components/user/sidebar-user-card"
+import { getSelfServeAdsSidebarPanel, type SelfServeAdsSidebarSurface } from "@/components/self-serve-ads-sidebar-panel"
 import { UserAvatar } from "@/components/user/user-avatar"
 import type { AnnouncementItem } from "@/lib/announcements"
 import type { FriendLinkItem } from "@/lib/friend-links"
-import type { HomeSidebarPanelItem } from "@/lib/home-sidebar-layout"
+import { groupHomeSidebarPanels, type HomeSidebarPanelItem } from "@/lib/home-sidebar-layout"
 import type { HomeSidebarStatsData } from "@/lib/home-sidebar-stats"
 import { getPostPath } from "@/lib/post-links"
 import { cn } from "@/lib/utils"
@@ -43,16 +44,25 @@ interface HomeSidebarPanelsProps {
   siteLogoPath?: string | null
   siteIconPath?: string | null
   stickyTopClass?: string
+  selfServeAdsSurface?: SelfServeAdsSidebarSurface | false
 }
 
-export function HomeSidebarPanels({ user, hotTopics, postLinkDisplayMode = "SLUG", announcements = [], showAnnouncements = true, friendLinks = [], friendLinksEnabled = false, createPostHref, topPanels = [], middlePanels = [], bottomPanels = [], stats = null, siteName, siteDescription, siteLogoPath, siteIconPath, stickyTopClass = "top-20" }: HomeSidebarPanelsProps) {
+export async function HomeSidebarPanels({ user, hotTopics, postLinkDisplayMode = "SLUG", announcements = [], showAnnouncements = true, friendLinks = [], friendLinksEnabled = false, createPostHref, topPanels = [], middlePanels = [], bottomPanels = [], stats = null, siteName, siteDescription, siteLogoPath, siteIconPath, stickyTopClass = "top-20", selfServeAdsSurface = "global" }: HomeSidebarPanelsProps) {
+  const selfServeAdsPanel = selfServeAdsSurface ? await getSelfServeAdsSidebarPanel(selfServeAdsSurface) : null
+  const sidebarPanels = groupHomeSidebarPanels([
+    ...topPanels,
+    ...middlePanels,
+    ...bottomPanels,
+    ...(selfServeAdsPanel ? [selfServeAdsPanel] : []),
+  ])
+
   return (
     <div className={cn("home-sidebar-panels mobile-sidebar-stack sticky flex min-w-0 w-full max-w-full flex-col gap-4", stickyTopClass)}>
       <SidebarUserCard user={user} createPostHref={createPostHref} siteName={siteName} siteDescription={siteDescription} siteLogoPath={siteLogoPath} siteIconPath={siteIconPath} />
 
 
       <AddonSlotRenderer slot="home.right.top" />
-      {topPanels.map((panel) => <div key={panel.id}>{panel.content}</div>)}
+      {sidebarPanels.top.map((panel) => <div key={panel.id}>{panel.content}</div>)}
 
       {showAnnouncements ? <HomeAnnouncementPanel announcements={announcements} /> : null}
 
@@ -79,7 +89,7 @@ export function HomeSidebarPanels({ user, hotTopics, postLinkDisplayMode = "SLUG
 
 
       <AddonSlotRenderer slot="home.right.middle" />
-      {middlePanels.map((panel) => <div key={panel.id}>{panel.content}</div>)}
+      {sidebarPanels.middle.map((panel) => <div key={panel.id}>{panel.content}</div>)}
 
       {friendLinksEnabled ? (
 
@@ -110,7 +120,7 @@ export function HomeSidebarPanels({ user, hotTopics, postLinkDisplayMode = "SLUG
       ) : null}
 
       <AddonSlotRenderer slot="home.right.bottom" />
-      {bottomPanels.map((panel) => <div key={panel.id}>{panel.content}</div>)}
+      {sidebarPanels.bottom.map((panel) => <div key={panel.id}>{panel.content}</div>)}
 
       {stats ? <HomeSiteStatsCard stats={stats} /> : null}
 

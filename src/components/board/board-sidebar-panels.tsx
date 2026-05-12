@@ -1,6 +1,7 @@
 import Link from "next/link"
 import { ArrowUpRight, BookText, Ellipsis, Link2 } from "lucide-react"
 
+import { AddonSlotRenderer } from "@/addons-host"
 import { HomeSidebarPanels } from "@/components/home/home-sidebar-panels"
 import { LevelIcon } from "@/components/level-icon"
 import { MarkdownContent } from "@/components/markdown-content"
@@ -155,7 +156,34 @@ function BoardLinksPanel({ links }: { links: BoardSidebarLinkItem[] }) {
 }
 
 export function BoardSidebarPanels({ user, hotTopics, board, moderators, announcements = [], showAnnouncements = true, postLinkDisplayMode = "SLUG", createPostHref, siteName, siteDescription, siteLogoPath, siteIconPath }: BoardSidebarPanelsProps) {
-  const topPanels: HomeSidebarPanelItem[] = []
+  const boardSlotProps = {
+    boardSlug: board.slug,
+    boardName: board.name,
+  }
+  const topPanels: HomeSidebarPanelItem[] = [
+    {
+      id: `${board.slug}:addon-board-right-top`,
+      slot: "home-right-top",
+      order: 0,
+      content: <AddonSlotRenderer slot="board.right.top" props={boardSlotProps} />,
+    },
+  ]
+  const middlePanels: HomeSidebarPanelItem[] = [
+    {
+      id: `${board.slug}:addon-board-right-middle`,
+      slot: "home-right-middle",
+      order: 0,
+      content: <AddonSlotRenderer slot="board.right.middle" props={boardSlotProps} />,
+    },
+  ]
+  const bottomPanels: HomeSidebarPanelItem[] = [
+    {
+      id: `${board.slug}:addon-board-right-bottom`,
+      slot: "home-right-bottom",
+      order: 0,
+      content: <AddonSlotRenderer slot="board.right.bottom" props={boardSlotProps} />,
+    },
+  ]
 
   if (board.sidebarLinks.length > 0) {
     topPanels.push({
@@ -186,6 +214,8 @@ export function BoardSidebarPanels({ user, hotTopics, board, moderators, announc
       siteLogoPath={siteLogoPath}
       siteIconPath={siteIconPath}
       topPanels={topPanels}
+      middlePanels={middlePanels}
+      bottomPanels={bottomPanels}
     />
   )
 }

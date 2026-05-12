@@ -19,6 +19,7 @@ export const POST = createUserRouteHandler(async ({ request, currentUser }) => {
 
   return apiSuccess({
     id: result.created.id,
+    reviewRequired: result.reviewRequired,
     navigation: {
       page: result.targetPage,
       sort: "oldest",

@@ -26,6 +26,7 @@
 - `before` action hook 在宿主显式传入 `throwOnError: true` 时可中断主流程
 - `surface` 只会选择一个插件生效；命中失败时自动回退宿主默认 UI
 - 宿主通过 `<AddonSlotRenderer slot="..." props={{ ... }} />` 或 `<AddonSurfaceRenderer surface="..." props={{ ... }} />` 调用时，当前点位上下文会进入 `context.props`
+- 同一插件重复注册同一个 `hook + key` 时，只保留第一次注册；重复项会进入插件 `warnings`，不会覆盖已注册处理器
 
 ## Action Hook
 
@@ -88,6 +89,8 @@
 | `addon.uninstalled.after` | system | 插件卸载完成后执行副作用逻辑 | `void` |
 | `addon.enabled.after` | system | 插件启用后执行副作用逻辑 | `void` |
 | `addon.disabled.after` | system | 插件禁用后执行副作用逻辑 | `void` |
+| `addon.api.request.before` | addon | 插件 API 命中后、处理器执行前触发；可用于审计预检或阻断 | `void` |
+| `addon.api.request.after` | addon | 插件 API 请求结束后触发，payload 含 status / matched / errorMessage | `void` |
 | `search.query.after` | search | 搜索请求完成后执行副作用（埋点、热词统计等） | `void` |
 
 补充说明：
@@ -180,6 +183,17 @@
 | `auth.register.form.after` | 在注册表单字段后插入 UI |
 | `post.create.captcha` | 在发帖页验证码区域插入 UI |
 
+### 插件页
+
+| Slot | 说明 |
+| --- | --- |
+| `addon.page.before` | 在插件前台页标题区和内容区之前插入 UI；props 含 `scope/addonId/addonName/pageKey/routePath/routeSegments` |
+| `addon.page.after` | 在插件前台页内容区之后插入 UI；props 同上 |
+| `addon.page.header.before` | 在插件前台页默认标题区开头插入 UI；仅默认 heading 启用时渲染 |
+| `addon.page.header.after` | 在插件前台页默认标题区末尾插入 UI；仅默认 heading 启用时渲染 |
+| `addon.page.content.before` | 在插件前台页 `AddonRenderBlock` 之前插入 UI |
+| `addon.page.content.after` | 在插件前台页 `AddonRenderBlock` 之后插入 UI |
+
 ### 全局布局
 
 | Slot | 说明 |
@@ -206,9 +220,9 @@
 | `home.right.top` | 在首页右栏顶部插入内容 |
 | `home.right.middle` | 在首页右栏中部插入内容 |
 | `home.right.bottom` | 在首页右栏底部插入内容 |
-| `board.right.top` | 在节点页右栏顶部插入内容 |
-| `board.right.middle` | 在节点页右栏中部插入内容 |
-| `board.right.bottom` | 在节点页右栏底部插入内容 |
+| `board.right.top` | 在节点页右栏顶部插入内容；props 含 `boardSlug/boardName` |
+| `board.right.middle` | 在节点页右栏中部插入内容；props 含 `boardSlug/boardName` |
+| `board.right.bottom` | 在节点页右栏底部插入内容；props 含 `boardSlug/boardName` |
 | `post.header.before` | 在帖子详情头部信息区前插入内容 |
 | `post.header.after` | 在帖子详情头部信息区后插入内容 |
 | `post.author.row.before` | 在帖子作者行前插入内容 |
@@ -255,6 +269,25 @@
 | `settings.points.after` | 在积分明细分区后插入内容 |
 | `settings.follows.before` | 在我的关注分区前插入内容 |
 | `settings.follows.after` | 在我的关注分区后插入内容 |
+
+### 任务 / 榜单
+
+| Slot | 说明 |
+| --- | --- |
+| `tasks.page.before` | 在任务中心页面主体前插入内容；props 含 `userId/pointName/todayCompleted/challengeCompleted/totalCompleted/totalTasks` |
+| `tasks.page.after` | 在任务中心页面主体后插入内容；props 同上 |
+| `tasks.header.before` | 在任务中心标题区前插入内容；props 同上 |
+| `tasks.header.after` | 在任务中心标题区后插入内容；props 同上 |
+| `tasks.content.before` | 在任务列表内容前插入内容；props 同上 |
+| `tasks.content.after` | 在任务列表内容后插入内容；props 同上 |
+| `leaderboard.page.before` | 在榜单页主体前插入内容；props 含 `title/totalUsers/entryCount/currentUserRank/activeTabHref` |
+| `leaderboard.page.after` | 在榜单页主体后插入内容；props 同上 |
+| `leaderboard.hero.before` | 在榜单页头图区前插入内容；props 同上 |
+| `leaderboard.hero.after` | 在榜单页头图区后插入内容；props 同上 |
+| `leaderboard.content.before` | 在榜单列表前插入内容；props 同上 |
+| `leaderboard.content.after` | 在榜单列表后插入内容；props 同上 |
+| `leaderboard.sidebar.before` | 在榜单页右栏前插入内容；props 同上 |
+| `leaderboard.sidebar.after` | 在榜单页右栏后插入内容；props 同上 |
 
 ### 积分 / VIP
 
@@ -395,6 +428,14 @@
 | `feed.following.after` | 在关注流专属区后插入内容 |
 | `feed.universe.before` | 在宇宙流专属区前插入内容 |
 | `feed.universe.after` | 在宇宙流专属区后插入内容 |
+| `zone.page.before` | 在分区页主体前插入内容；props 含 `zoneId/zoneSlug/zoneName/boardCount/postCount/currentSort/currentPage/totalPages/totalPosts/canView` |
+| `zone.page.after` | 在分区页主体后插入内容；props 同上 |
+| `zone.hero.before` | 在分区信息区前插入内容；props 同上 |
+| `zone.hero.after` | 在分区信息区后插入内容；props 同上 |
+| `zone.content.before` | 在分区帖子流前插入内容；props 同上 |
+| `zone.content.after` | 在分区帖子流后插入内容；props 同上 |
+| `zone.sidebar.before` | 在分区页右栏前插入内容；props 同上 |
+| `zone.sidebar.after` | 在分区页右栏后插入内容；props 同上 |
 | `board.page.before` | 在节点页主体前插入内容 |
 | `board.page.after` | 在节点页主体后插入内容 |
 | `board.hero.before` | 在节点顶部介绍卡前插入内容 |
@@ -454,12 +495,22 @@
 | `funs.content.after` | 在全部节点内容区后插入内容 |
 | `funs.sidebar.before` | 在全部节点右侧栏前插入内容 |
 | `funs.sidebar.after` | 在全部节点右侧栏后插入内容 |
+| `funs.app.page.before` | 在功能应用页主体前插入内容；props 含 `appId/appName`，具体页面可能额外提供业务字段 |
+| `funs.app.page.after` | 在功能应用页主体后插入内容；props 同上 |
+| `funs.app.content.before` | 在功能应用内容前插入内容；props 同上 |
+| `funs.app.content.after` | 在功能应用内容后插入内容；props 同上 |
 | `badge.page.before` | 在勋章详情页主体前插入内容 |
 | `badge.page.after` | 在勋章详情页主体后插入内容 |
 | `badge.hero.before` | 在勋章详情顶部介绍区前插入内容 |
 | `badge.hero.after` | 在勋章详情顶部介绍区后插入内容 |
 | `badge.sidebar.before` | 在勋章详情右侧栏前插入内容 |
 | `badge.sidebar.after` | 在勋章详情右侧栏后插入内容 |
+| `custom-page.page.before` | 在自定义页主体前插入内容；props 含 `pageId/title/routePath/includeHeader/includeLeftSidebar/includeRightSidebar` |
+| `custom-page.page.after` | 在自定义页主体后插入内容；props 同上 |
+| `custom-page.content.before` | 在自定义页 HTML 内容前插入内容；props 同上 |
+| `custom-page.content.after` | 在自定义页 HTML 内容后插入内容；props 同上 |
+| `custom-page.sidebar.before` | 在自定义页右侧栏前插入内容；props 同上 |
+| `custom-page.sidebar.after` | 在自定义页右侧栏后插入内容；props 同上 |
 
 ### 协议 / 小黑屋 / 认证流程 / 充值结果
 

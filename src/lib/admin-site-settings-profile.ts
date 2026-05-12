@@ -129,7 +129,7 @@ export async function updateProfileSiteSettingsSection(existing: SiteSettingsRec
       siteName,
       siteSlogan,
       siteDescription,
-      siteLogoText: siteLogoText || siteName,
+      siteLogoText,
       siteLogoPath: siteLogoPath || null,
       siteSeoKeywords,
       analyticsCode: analyticsCode || null,

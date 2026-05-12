@@ -63,6 +63,7 @@ export const POST = createUserRouteHandler(async ({ request, currentUser }) => {
     return apiSuccess({
       code: redeemCode.code,
       points: redeemCode.points,
+      balance: redeemCode.balance,
     }, "兑换成功")
   })
 }, {

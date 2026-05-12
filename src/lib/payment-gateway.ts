@@ -41,6 +41,7 @@ import type {
 } from "@/lib/payment-gateway.types"
 import { getSiteSettings } from "@/lib/site-settings"
 import { toAbsoluteSiteUrl } from "@/lib/site-origin"
+import { revalidateUserSurfaceCache } from "@/lib/user-surface"
 
 const PAYMENT_GATEWAY_ADMIN_RECENT_ORDERS_PAGE_SIZE = 12
 
@@ -772,6 +773,7 @@ export async function createPaymentCheckout(input: {
 async function fulfillPointTopupOrder(orderId: string) {
   const settings = await getSiteSettings()
   let successEmailSnapshot: PaymentGatewayOrderSuccessEmailSnapshot | null = null
+  let fulfilledUserId: number | null = null
 
   const promoted = await prisma.paymentOrder.updateMany({
     where: {
@@ -848,6 +850,7 @@ async function fulfillPointTopupOrder(orderId: string) {
           bonusPoints: null,
           totalPoints: null,
         }
+        fulfilledUserId = order.userId
         return
       }
 
@@ -915,7 +918,12 @@ async function fulfillPointTopupOrder(orderId: string) {
         bonusPoints: topup.bonusPoints,
         totalPoints: topup.totalPoints,
       }
+      fulfilledUserId = user.id
     })
+
+    if (fulfilledUserId) {
+      revalidateUserSurfaceCache(fulfilledUserId)
+    }
 
     if (successEmailSnapshot) {
       await maybeEnqueuePaymentGatewayOrderSuccessEmail(successEmailSnapshot)
@@ -1524,6 +1532,11 @@ export async function getPaymentOrderStatusForUser(userId: number, merchantOrder
       metadataJson: true,
       lastErrorCode: true,
       lastErrorMessage: true,
+      user: {
+        select: {
+          points: true,
+        },
+      },
     },
   })
 
@@ -1556,6 +1569,11 @@ export async function getPaymentOrderStatusForUser(userId: number, merchantOrder
       metadataJson: true,
       lastErrorCode: true,
       lastErrorMessage: true,
+      user: {
+        select: {
+          points: true,
+        },
+      },
     },
   })
 
@@ -1579,6 +1597,7 @@ export async function getPaymentOrderStatusForUser(userId: number, merchantOrder
     createdAt: refreshed.createdAt.toISOString(),
     lastErrorCode: refreshed.lastErrorCode,
     lastErrorMessage: refreshed.lastErrorMessage,
+    userBalance: refreshed.user?.points ?? null,
     topup,
   }
 }

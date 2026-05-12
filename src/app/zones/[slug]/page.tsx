@@ -1,6 +1,7 @@
 import type { Metadata } from "next"
 import { notFound, redirect } from "next/navigation"
 
+import { AddonSlotRenderer } from "@/addons-host"
 import { AccessDeniedCard } from "@/components/access-denied-card"
 import { CollapsibleInfoCard } from "@/components/collapsible-info-card"
 import { ForumPageShell } from "@/components/forum/forum-page-shell"
@@ -149,6 +150,18 @@ export default async function ZonePage(props: PageProps<"/zones/[slug]">) {
     featuredHref: buildZonePageHref(params.slug, 1, "featured"),
   }
   const zonePostsApiPath = buildZonePostsApiPath(params.slug, currentSort)
+  const zoneSlotProps = {
+    zoneId: zone.id,
+    zoneSlug: zone.slug,
+    zoneName: zone.name,
+    boardCount: zoneBoards.length,
+    postCount: zone.count,
+    currentSort,
+    currentPage: page,
+    totalPages,
+    totalPosts: postsPage.total,
+    canView: permission.allowed,
+  }
 
 
 
@@ -156,6 +169,7 @@ export default async function ZonePage(props: PageProps<"/zones/[slug]">) {
     <div className="min-h-screen bg-background">
       <SiteHeader />
       <div className="mx-auto max-w-[1200px] px-1">
+        <AddonSlotRenderer slot="zone.page.before" props={zoneSlotProps} />
         <ForumPageShell
           zones={allZones}
           boards={allBoards}
@@ -164,6 +178,7 @@ export default async function ZonePage(props: PageProps<"/zones/[slug]">) {
             <main className="pb-12 py-1 mt-5">
             <div className="space-y-3">
 
+              <AddonSlotRenderer slot="zone.hero.before" props={zoneSlotProps} />
               <CollapsibleInfoCard
                 badge="论坛分区"
                 title={zone.name}
@@ -190,6 +205,7 @@ export default async function ZonePage(props: PageProps<"/zones/[slug]">) {
                   })),
                 ]}
               />
+              <AddonSlotRenderer slot="zone.hero.after" props={zoneSlotProps} />
 
 
               {!permission.allowed ? (
@@ -198,6 +214,7 @@ export default async function ZonePage(props: PageProps<"/zones/[slug]">) {
               ) : (
                 <>
 
+                  <AddonSlotRenderer slot="zone.content.before" props={zoneSlotProps} />
                   {useInfinitePostList ? (
                     <InfiniteForumPostStream
                       apiPath={zonePostsApiPath}
@@ -230,6 +247,7 @@ export default async function ZonePage(props: PageProps<"/zones/[slug]">) {
                       buildHref={(targetPage) => buildZonePageHref(params.slug, targetPage, currentSort)}
                     />
                   )}
+                  <AddonSlotRenderer slot="zone.content.after" props={zoneSlotProps} />
                 </>
               )}
             </div>
@@ -237,6 +255,7 @@ export default async function ZonePage(props: PageProps<"/zones/[slug]">) {
           )}
           rightSidebar={(
             <aside className="mt-6 hidden pb-12 lg:block">
+              <AddonSlotRenderer slot="zone.sidebar.before" props={zoneSlotProps} />
               <HomeSidebarPanels
                 user={sidebarUser}
                 hotTopics={hotTopics}
@@ -249,9 +268,11 @@ export default async function ZonePage(props: PageProps<"/zones/[slug]">) {
                 siteLogoPath={settings.siteLogoPath}
                 siteIconPath={settings.siteIconPath}
               />
+              <AddonSlotRenderer slot="zone.sidebar.after" props={zoneSlotProps} />
             </aside>
           )}
         />
+        <AddonSlotRenderer slot="zone.page.after" props={zoneSlotProps} />
       </div>
     </div>
   )

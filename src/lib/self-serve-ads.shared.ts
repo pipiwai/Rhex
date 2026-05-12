@@ -9,6 +9,8 @@ export interface SelfServeAdDurationOption {
 export interface SelfServeAdConfig {
   enabled: boolean
   visibleOnHome: boolean
+  visibleOnPostDetail: boolean
+  visibleOnGlobalSidebar: boolean
   cardTitle: string
   sidebarSlot: "home-right-top" | "home-right-middle" | "home-right-bottom"
 
@@ -175,6 +177,8 @@ export function toSelfServeAdConfig(config: Record<string, boolean | number | st
   return {
     enabled: Boolean(config.enabled ?? true),
     visibleOnHome: Boolean(config.visibleOnHome ?? true),
+    visibleOnPostDetail: Boolean(config.visibleOnPostDetail ?? false),
+    visibleOnGlobalSidebar: Boolean(config.visibleOnGlobalSidebar ?? false),
     cardTitle: String(config.cardTitle ?? "推广广告位"),
 
     sidebarSlot: config.sidebarSlot === "home-right-top" || config.sidebarSlot === "home-right-bottom" ? config.sidebarSlot : "home-right-middle",

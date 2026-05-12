@@ -27,6 +27,7 @@ import { getAddonSurfaceExecutionMode } from "@/addons-host/surface-modes"
 import type {
   AddonActionHookRegistration,
   AddonApiRegistration,
+  AddonHttpMethod,
   AddonAsyncWaterfallHookRegistration,
   AddonBackgroundJobRegistration,
   AddonBuildApi,
@@ -39,6 +40,57 @@ import type {
   AddonSurfaceRegistration,
   AddonWaterfallHookRegistration,
 } from "@/addons-host/types"
+
+function normalizeRegistrationKey(manifest: AddonManifest, kind: string, key: string) {
+  const normalizedKey = key.trim()
+  if (!normalizedKey) {
+    throw new Error(`addon "${manifest.id}" ${kind} registration requires a non-empty key`)
+  }
+
+  return normalizedKey
+}
+
+function warnAndSkipDuplicate(
+  warnings: string[],
+  seen: Set<string>,
+  message: string,
+) {
+  if (!seen.has(message)) {
+    seen.add(message)
+    warnings.push(message)
+  }
+}
+
+function claimRegistration(
+  warnings: string[],
+  seenRegistrations: Set<string>,
+  seenWarnings: Set<string>,
+  identity: string,
+  message: string,
+) {
+  if (!seenRegistrations.has(identity)) {
+    seenRegistrations.add(identity)
+    return true
+  }
+
+  warnAndSkipDuplicate(warnings, seenWarnings, message)
+  return false
+}
+
+function normalizeAddonHttpMethods(methods?: AddonHttpMethod[]) {
+  const normalized = (methods ?? ["GET"])
+    .map((item) => item.toUpperCase() as AddonHttpMethod)
+  const seen = new Set<AddonHttpMethod>()
+
+  return normalized.filter((method) => {
+    if (seen.has(method)) {
+      return false
+    }
+
+    seen.add(method)
+    return true
+  })
+}
 
 export function createAddonBuildApi(manifest: AddonManifest, warnings: string[]) {
   const slots: AddonSlotRegistration[] = []
@@ -53,6 +105,19 @@ export function createAddonBuildApi(manifest: AddonManifest, warnings: string[])
   const waterfallHooks: AddonWaterfallHookRegistration[] = []
   const asyncWaterfallHooks: AddonAsyncWaterfallHookRegistration[] = []
   const dataMigrations: AddonDataMigrationRegistration[] = []
+  const seenWarnings = new Set<string>()
+  const seenSlotRegistrations = new Set<string>()
+  const seenSurfaceRegistrations = new Set<string>()
+  const seenPublicPageRoutes = new Set<string>()
+  const seenAdminPageRoutes = new Set<string>()
+  const seenPublicApiRoutes = new Set<string>()
+  const seenAdminApiRoutes = new Set<string>()
+  const seenBackgroundJobRegistrations = new Set<string>()
+  const seenProviderRegistrations = new Set<string>()
+  const seenActionHookRegistrations = new Set<string>()
+  const seenWaterfallHookRegistrations = new Set<string>()
+  const seenAsyncWaterfallHookRegistrations = new Set<string>()
+  const seenDataMigrationVersions = new Set<number>()
 
   const api: AddonBuildApi = {
     registerSlot<TProps extends AddonSlotProps = AddonSlotProps>(
@@ -63,20 +128,33 @@ export function createAddonBuildApi(manifest: AddonManifest, warnings: string[])
         "slot:register",
         `addon "${manifest.id}" is not allowed to register slots`,
       )
+      const normalizedSlot = registration.slot.trim()
       const sensitivePermission = resolveAddonSensitivePermissionForSlot(
-        registration.slot,
+        normalizedSlot,
       )
       if (sensitivePermission) {
         assertAddonPermission(
           manifest,
           sensitivePermission,
-          `addon "${manifest.id}" is not allowed to attach to slot "${registration.slot}"`,
+          `addon "${manifest.id}" is not allowed to attach to slot "${normalizedSlot}"`,
         )
+      }
+
+      const normalizedKey = normalizeRegistrationKey(manifest, "slot", registration.key)
+      if (!claimRegistration(
+        warnings,
+        seenSlotRegistrations,
+        seenWarnings,
+        `${normalizedSlot}:${normalizedKey}`,
+        `duplicate slot registration "${normalizedSlot}:${normalizedKey}" in addon "${manifest.id}" ignored`,
+      )) {
+        return
       }
 
       slots.push({
         ...registration,
-        key: registration.key.trim(),
+        key: normalizedKey,
+        slot: normalizedSlot,
         order: registration.order ?? 0,
       } as AddonSlotRegistration)
     },
@@ -109,9 +187,20 @@ export function createAddonBuildApi(manifest: AddonManifest, warnings: string[])
         )
       }
 
+      const normalizedKey = normalizeRegistrationKey(manifest, "surface", registration.key)
+      if (!claimRegistration(
+        warnings,
+        seenSurfaceRegistrations,
+        seenWarnings,
+        `${normalizedSurface}:${normalizedKey}`,
+        `duplicate surface registration "${normalizedSurface}:${normalizedKey}" in addon "${manifest.id}" ignored`,
+      )) {
+        return
+      }
+
       surfaces.push({
         ...registration,
-        key: registration.key.trim(),
+        key: normalizedKey,
         surface: normalizedSurface,
         render: surfaceMode === "client" ? undefined : registration.render,
         clientModule: normalizedClientModule || undefined,
@@ -124,10 +213,22 @@ export function createAddonBuildApi(manifest: AddonManifest, warnings: string[])
         "page:public",
         `addon "${manifest.id}" is not allowed to register public pages`,
       )
+      const normalizedPath = normalizeMountedAddonPath(registration.path)
+      const normalizedKey = normalizeRegistrationKey(manifest, "public page", registration.key)
+      if (!claimRegistration(
+        warnings,
+        seenPublicPageRoutes,
+        seenWarnings,
+        normalizedPath,
+        `duplicate public page route "${normalizedPath}" in addon "${manifest.id}" ignored`,
+      )) {
+        return
+      }
+
       publicPages.push({
         ...registration,
-        key: registration.key.trim(),
-        path: normalizeMountedAddonPath(registration.path),
+        key: normalizedKey,
+        path: normalizedPath,
       })
     },
     registerAdminPage(registration) {
@@ -136,10 +237,22 @@ export function createAddonBuildApi(manifest: AddonManifest, warnings: string[])
         "page:admin",
         `addon "${manifest.id}" is not allowed to register admin pages`,
       )
+      const normalizedPath = normalizeMountedAddonPath(registration.path)
+      const normalizedKey = normalizeRegistrationKey(manifest, "admin page", registration.key)
+      if (!claimRegistration(
+        warnings,
+        seenAdminPageRoutes,
+        seenWarnings,
+        normalizedPath,
+        `duplicate admin page route "${normalizedPath}" in addon "${manifest.id}" ignored`,
+      )) {
+        return
+      }
+
       adminPages.push({
         ...registration,
-        key: registration.key.trim(),
-        path: normalizeMountedAddonPath(registration.path),
+        key: normalizedKey,
+        path: normalizedPath,
       })
     },
     registerPublicApi(registration) {
@@ -148,11 +261,26 @@ export function createAddonBuildApi(manifest: AddonManifest, warnings: string[])
         "api:public",
         `addon "${manifest.id}" is not allowed to register public APIs`,
       )
+      const normalizedPath = normalizeMountedAddonPath(registration.path)
+      const normalizedKey = normalizeRegistrationKey(manifest, "public API", registration.key)
+      const methods = normalizeAddonHttpMethods(registration.methods)
+        .filter((method) => claimRegistration(
+          warnings,
+          seenPublicApiRoutes,
+          seenWarnings,
+          `${normalizedPath}:${method}`,
+          `duplicate public API route "${method} ${normalizedPath}" in addon "${manifest.id}" ignored`,
+        ))
+
+      if (methods.length === 0) {
+        return
+      }
+
       publicApis.push({
         ...registration,
-        key: registration.key.trim(),
-        path: normalizeMountedAddonPath(registration.path),
-        methods: (registration.methods ?? ["GET"]).map((item) => item.toUpperCase() as typeof item),
+        key: normalizedKey,
+        path: normalizedPath,
+        methods,
       })
     },
     registerAdminApi(registration) {
@@ -161,11 +289,26 @@ export function createAddonBuildApi(manifest: AddonManifest, warnings: string[])
         "api:admin",
         `addon "${manifest.id}" is not allowed to register admin APIs`,
       )
+      const normalizedPath = normalizeMountedAddonPath(registration.path)
+      const normalizedKey = normalizeRegistrationKey(manifest, "admin API", registration.key)
+      const methods = normalizeAddonHttpMethods(registration.methods)
+        .filter((method) => claimRegistration(
+          warnings,
+          seenAdminApiRoutes,
+          seenWarnings,
+          `${normalizedPath}:${method}`,
+          `duplicate admin API route "${method} ${normalizedPath}" in addon "${manifest.id}" ignored`,
+        ))
+
+      if (methods.length === 0) {
+        return
+      }
+
       adminApis.push({
         ...registration,
-        key: registration.key.trim(),
-        path: normalizeMountedAddonPath(registration.path),
-        methods: (registration.methods ?? ["GET"]).map((item) => item.toUpperCase() as typeof item),
+        key: normalizedKey,
+        path: normalizedPath,
+        methods,
       })
     },
     registerBackgroundJob(registration) {
@@ -175,9 +318,20 @@ export function createAddonBuildApi(manifest: AddonManifest, warnings: string[])
         `addon "${manifest.id}" is not allowed to register background jobs`,
       )
 
+      const normalizedKey = normalizeRegistrationKey(manifest, "background job", registration.key)
+      if (!claimRegistration(
+        warnings,
+        seenBackgroundJobRegistrations,
+        seenWarnings,
+        normalizedKey,
+        `duplicate background job registration "${normalizedKey}" in addon "${manifest.id}" ignored`,
+      )) {
+        return
+      }
+
       backgroundJobs.push({
         ...registration,
-        key: registration.key.trim(),
+        key: normalizedKey,
       } as AddonBackgroundJobRegistration)
     },
     registerProvider(registration) {
@@ -186,21 +340,33 @@ export function createAddonBuildApi(manifest: AddonManifest, warnings: string[])
         "provider:register",
         `addon "${manifest.id}" is not allowed to register providers`,
       )
+      const normalizedKind = registration.kind.trim()
+      const normalizedCode = registration.code.trim()
       const sensitivePermission = resolveAddonSensitivePermissionForProviderKind(
-        registration.kind,
+        normalizedKind,
       )
       if (sensitivePermission) {
         assertAddonPermission(
           manifest,
           sensitivePermission,
-          `addon "${manifest.id}" is not allowed to register provider kind "${registration.kind}"`,
+          `addon "${manifest.id}" is not allowed to register provider kind "${normalizedKind}"`,
         )
+      }
+
+      if (!claimRegistration(
+        warnings,
+        seenProviderRegistrations,
+        seenWarnings,
+        `${normalizedKind}:${normalizedCode}`,
+        `duplicate provider registration "${normalizedKind}:${normalizedCode}" in addon "${manifest.id}" ignored`,
+      )) {
+        return
       }
 
       providers.push({
         ...registration,
-        kind: registration.kind.trim(),
-        code: registration.code.trim(),
+        kind: normalizedKind,
+        code: normalizedCode,
         label: registration.label.trim(),
         order: registration.order ?? 0,
       })
@@ -215,9 +381,20 @@ export function createAddonBuildApi(manifest: AddonManifest, warnings: string[])
         throw new Error(`unknown addon action hook "${registration.hook}"`)
       }
 
+      const normalizedKey = normalizeRegistrationKey(manifest, "action hook", registration.key)
+      if (!claimRegistration(
+        warnings,
+        seenActionHookRegistrations,
+        seenWarnings,
+        `${registration.hook}:${normalizedKey}`,
+        `duplicate action hook registration "${registration.hook}:${normalizedKey}" in addon "${manifest.id}" ignored`,
+      )) {
+        return
+      }
+
       actionHooks.push({
         ...registration,
-        key: registration.key.trim(),
+        key: normalizedKey,
         order: registration.order ?? 0,
       })
     },
@@ -231,9 +408,20 @@ export function createAddonBuildApi(manifest: AddonManifest, warnings: string[])
         throw new Error(`unknown addon waterfall hook "${registration.hook}"`)
       }
 
+      const normalizedKey = normalizeRegistrationKey(manifest, "waterfall hook", registration.key)
+      if (!claimRegistration(
+        warnings,
+        seenWaterfallHookRegistrations,
+        seenWarnings,
+        `${registration.hook}:${normalizedKey}`,
+        `duplicate waterfall hook registration "${registration.hook}:${normalizedKey}" in addon "${manifest.id}" ignored`,
+      )) {
+        return
+      }
+
       waterfallHooks.push({
         ...registration,
-        key: registration.key.trim(),
+        key: normalizedKey,
         order: registration.order ?? 0,
       })
     },
@@ -247,9 +435,20 @@ export function createAddonBuildApi(manifest: AddonManifest, warnings: string[])
         throw new Error(`unknown addon async waterfall hook "${registration.hook}"`)
       }
 
+      const normalizedKey = normalizeRegistrationKey(manifest, "async waterfall hook", registration.key)
+      if (!claimRegistration(
+        warnings,
+        seenAsyncWaterfallHookRegistrations,
+        seenWarnings,
+        `${registration.hook}:${normalizedKey}`,
+        `duplicate async waterfall hook registration "${registration.hook}:${normalizedKey}" in addon "${manifest.id}" ignored`,
+      )) {
+        return
+      }
+
       asyncWaterfallHooks.push({
         ...registration,
-        key: registration.key.trim(),
+        key: normalizedKey,
         order: registration.order ?? 0,
       })
     },
@@ -260,9 +459,20 @@ export function createAddonBuildApi(manifest: AddonManifest, warnings: string[])
         `addon "${manifest.id}" is not allowed to register data migrations`,
       )
 
+      const version = Math.max(1, Math.floor(registration.version))
+      if (seenDataMigrationVersions.has(version)) {
+        warnAndSkipDuplicate(
+          warnings,
+          seenWarnings,
+          `duplicate data migration version "${version}" in addon "${manifest.id}" ignored`,
+        )
+        return
+      }
+
+      seenDataMigrationVersions.add(version)
       dataMigrations.push({
         ...registration,
-        version: Math.max(1, Math.floor(registration.version)),
+        version,
       })
     },
   }

@@ -2,6 +2,7 @@ import type { ReactNode } from "react"
 import Link from "next/link"
 import { ArrowRight, Award, Medal, TrendingUp, Trophy, type LucideIcon } from "lucide-react"
 
+import { AddonSlotRenderer } from "@/addons-host"
 import { ForumPageShell } from "@/components/forum/forum-page-shell"
 import { HomeSidebarPanels } from "@/components/home/home-sidebar-panels"
 import { SiteHeader } from "@/components/site-header"
@@ -151,6 +152,7 @@ export function LeaderboardPageShell<TEntry extends LeaderboardShellEntry>({
   eyebrow,
   title,
   description,
+  totalUsers,
   entries,
   currentUserEntry,
   currentUserHint,
@@ -183,17 +185,26 @@ export function LeaderboardPageShell<TEntry extends LeaderboardShellEntry>({
       ),
     },
   ]
+  const leaderboardSlotProps = {
+    title,
+    totalUsers,
+    entryCount: entries.length,
+    currentUserRank: currentUserEntry?.rank ?? null,
+    activeTabHref: tabs.find((tab) => tab.active)?.href ?? null,
+  }
 
   return (
     <div className="min-h-screen bg-background text-foreground">
       <SiteHeader />
       <div className="mx-auto max-w-[1200px] px-1">
+        <AddonSlotRenderer slot="leaderboard.page.before" props={leaderboardSlotProps} />
         <ForumPageShell
           zones={chrome.zones}
           boards={chrome.boards}
           main={(
             <main className="mt-6 py-1 pb-12">
               <div className="space-y-5">
+                <AddonSlotRenderer slot="leaderboard.hero.before" props={leaderboardSlotProps} />
                 <section className="overflow-hidden rounded-xl border border-border">
                   <div className="flex flex-col gap-4 border-b border-border/70 px-5 py-5 md:px-6">
                     <div className="flex flex-wrap items-center justify-between gap-3">
@@ -234,7 +245,9 @@ export function LeaderboardPageShell<TEntry extends LeaderboardShellEntry>({
                     </div>
                   </div>
                 </section>
+                <AddonSlotRenderer slot="leaderboard.hero.after" props={leaderboardSlotProps} />
 
+                <AddonSlotRenderer slot="leaderboard.content.before" props={leaderboardSlotProps} />
                 <section className="overflow-hidden rounded-xl border border-border bg-card shadow-xs">
                   <div className="grid grid-cols-[70px_minmax(0,1fr)_132px] items-center gap-3 border-b border-border bg-muted/25 px-4 py-3 text-[11px] font-semibold tracking-[0.14em] text-muted-foreground uppercase">
                     <span>排名</span>
@@ -303,11 +316,13 @@ export function LeaderboardPageShell<TEntry extends LeaderboardShellEntry>({
                     </div>
                   ) : null}
                 </section>
+                <AddonSlotRenderer slot="leaderboard.content.after" props={leaderboardSlotProps} />
               </div>
             </main>
           )}
           rightSidebar={(
             <aside className="mt-6 hidden pb-12 lg:block">
+              <AddonSlotRenderer slot="leaderboard.sidebar.before" props={leaderboardSlotProps} />
               <HomeSidebarPanels
                 user={chrome.sidebarUser}
                 hotTopics={chrome.hotTopics}
@@ -319,9 +334,11 @@ export function LeaderboardPageShell<TEntry extends LeaderboardShellEntry>({
                 siteIconPath={chrome.settings.siteIconPath}
                 topPanels={topPanels}
               />
+              <AddonSlotRenderer slot="leaderboard.sidebar.after" props={leaderboardSlotProps} />
             </aside>
           )}
         />
+        <AddonSlotRenderer slot="leaderboard.page.after" props={leaderboardSlotProps} />
       </div>
     </div>
   )

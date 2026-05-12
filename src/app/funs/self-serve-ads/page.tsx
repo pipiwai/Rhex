@@ -1,6 +1,7 @@
 import type { Metadata } from "next"
 import type { ComponentType } from "react"
 
+import { AddonSlotRenderer } from "@/addons-host"
 import { SiteHeader } from "@/components/site-header"
 
 
@@ -20,16 +21,24 @@ export async function generateMetadata(): Promise<Metadata> {
 export default async function SelfServeAdsPage() {
   const config = await getSelfServeAdsAppConfig()
   const AppIntroComponent = SelfServeAdsIntroPage as ComponentType<{ AppId: string; config: Record<string, boolean | number | string> }>
+  const funsAppSlotProps = {
+    appId: "self-serve-ads",
+    appName: "自助广告",
+    isAuthenticated: false,
+  }
 
   return (
     <div className="min-h-screen bg-background">
       <SiteHeader />
       <div className="mx-auto max-w-[1200px] px-1 py-8">
+        <AddonSlotRenderer slot="funs.app.page.before" props={funsAppSlotProps} />
         <div className="space-y-6">
+          <AddonSlotRenderer slot="funs.app.content.before" props={funsAppSlotProps} />
           <AppIntroComponent AppId="self-serve-ads" config={config} />
+          <AddonSlotRenderer slot="funs.app.content.after" props={funsAppSlotProps} />
         </div>
+        <AddonSlotRenderer slot="funs.app.page.after" props={funsAppSlotProps} />
       </div>
     </div>
   )
 }
-
